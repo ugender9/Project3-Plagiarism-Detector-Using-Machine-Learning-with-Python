@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plagiarism Detector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<style>
+    body {
+        font-family: 'Roboto', Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        color: #333;
+    }
+
+    .container {
+        width: 60%;
+        max-width: 600px;
+        background: #ffffff;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        position: relative;
+    }
+
+    h1 {
+        margin-bottom: 30px;
+        color: #4a5568;
+        font-weight: 700;
+    }
+
+    textarea {
+        width: 100%;
+        height: 120px;
+        margin-bottom: 10px;
+        padding: 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 16px;
+        font-family: 'Roboto', Arial, sans-serif;
+        resize: vertical;
+        transition: border-color 0.3s ease;
+    }
+
+    textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .char-count {
+        font-size: 12px;
+        color: #718096;
+        margin-bottom: 20px;
+        text-align: right;
+    }
+
+    .button-group {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    button {
+        background-color: #667eea;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    button:hover {
+        background-color: #5a67d8;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    button:active {
+        transform: translateY(0);
+    }
+
+    .reset-btn {
+        background-color: #e53e3e;
+    }
+
+    .reset-btn:hover {
+        background-color: #c53030;
+        box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3);
+    }
+
+    .loading {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    .result {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        background-color: #f7fafc;
+        border: 1px solid #e2e8f0;
+        animation: fadeIn 0.5s ease-in;
+        font-weight: 500;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Media Queries for Responsiveness */
+    @media (max-width: 768px) {
+        .container {
+            width: 90%;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            height: 100px;
+            font-size: 14px;
+        }
+
+        .button-group {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .container {
+            width: 95%;
+            padding: 15px;
+        }
+
+        h1 {
+            font-size: 20px;
+        }
+
+        textarea {
+            height: 80px;
+        }
+    }
+
+    /* Accessibility: High contrast mode support */
+    @media (prefers-contrast: high) {
+        body {
+            background: #ffffff;
+        }
+
+        .container {
+            border: 2px solid #000000;
+        }
+
+        button {
+            border: 2px solid #000000;
+        }
+    }
+
+</style>
+<body>
+    <div class="container">
+        <h1>Plagiarism Detector</h1>
+        <form id="plagiarism-form" action="/detect" method="post">
+            <textarea id="text-input" name="text" placeholder="Enter text here..." required aria-label="Text input for plagiarism detection"></textarea>
+            <div class="char-count" id="char-count">0 characters</div>
+            <div class="button-group">
+                <button type="submit" aria-label="Submit text for plagiarism check">Check for Plagiarism</button>
+                <button type="button" class="reset-btn" onclick="resetForm()" aria-label="Reset the form">Reset</button>
+            </div>
+        </form>
+        <div class="loading" id="loading-spinner"></div>
+        {% if result %}
+            <div class="result" role="alert" aria-live="polite">{{ result }}</div>
+        {% endif %}
+    </div>
+
+    <script>
+        const textarea = document.getElementById('text-input');
+        const charCount = document.getElementById('char-count');
+        const form = document.getElementById('plagiarism-form');
+        const loadingSpinner = document.getElementById('loading-spinner');
+
+        // Character count
+        textarea.addEventListener('input', function() {
+            charCount.textContent = this.value.length + ' characters';
+        });
+
+        // Loading spinner on submit
+        form.addEventListener('submit', function() {
+            loadingSpinner.style.display = 'block';
+        });
+
+        // Reset form function
+        function resetForm() {
+            textarea.value = '';
+            charCount.textContent = '0 characters';
+            const resultDiv = document.querySelector('.result');
+            if (resultDiv) {
+                resultDiv.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
