@@ -1,7 +1,11 @@
- from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for
 import pickle
 import string
+import nltk
 from nltk.corpus import stopwords
+
+# Download NLTK stopwords if not already downloaded
+nltk.download('stopwords', quiet=True)
 
 app = Flask(__name__)
 
